@@ -1,9 +1,9 @@
-version: '3.8'
-
 services:
   api:
     container_name: sos-rs-api
-    image: node:18.18-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     restart: always
     tty: true
     depends_on:
@@ -12,20 +12,10 @@ services:
       - '${PORT}:${PORT}'
     volumes:
       - .:/usr/app
-      - /usr/app/node_modules
-    working_dir: '/usr/app'
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_DATABASE_NAME=${DB_DATABASE_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_DATABASE_NAME}?schema=public
+      - HOST=${HOST}
       - PORT=${PORT}
-    command: >
-      sh -c "npm install &&
-      npx prisma generate &&
-      npx prisma migrate dev &&
-      npm run start:dev -- --preserveWatchOutput"
   db:
     container_name: sos-rs-db
     image: postgres
@@ -34,3 +24,4 @@ services:
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_USER=${DB_USER}
+
