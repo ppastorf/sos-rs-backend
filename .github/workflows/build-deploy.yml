@@ -85,7 +85,7 @@ jobs:
 
   deploy-dev:
     if: github.ref == 'refs/heads/develop'
-    uses: ./.github/workflows/templates/deploy-ecs.yml
+    uses: ./.github/workflows/deploy-ecs.yml
     needs: [build]
     permissions:
       packages: read
@@ -101,7 +101,7 @@ jobs:
 
   deploy-prod:
     if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/templates/deploy-ecs.yml
+    uses: ./.github/workflows/deploy-ecs.yml
     needs: [build]
     permissions:
       packages: read
