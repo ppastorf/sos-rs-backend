@@ -17,15 +17,13 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   IMAGE_TAG: ${{ github.sha }}
 
-  # dev
-  DEV_AWS_REGION: sa-east-1
   DEV_BRANCH: develop
+  DEV_AWS_REGION: sa-east-1
   DEV_ECS_CLUSTER: sos-rs-freetier-ec2_cluster
   DEV_ECS_SERVICE: sos-rs-freetier-backend
   DEV_ECS_CONTAINER_NAME: server
   DEV_ECS_TASK_DEFINITION: sos-rs-freetier-backend
 
-  # prod
   PROD_AWS_REGION: sa-east-1
   PROD_BRANCH: main
   PROD_REGION: sa-east-1
@@ -81,33 +79,79 @@ jobs:
 
   deploy-dev:
     if: github.ref == 'refs/heads/develop'
-    uses: ./.github/workflows/deploy-ecs.yml
-    needs: [build]
+
+    runs-on: ubuntu-latest
     permissions:
       packages: read
-    with:
-      AWS_REGION:  ${{ env.DEV_AWS_REGION }}
-      ECS_CLUSTER: ${{ env.DEV_ECS_CLUSTER }}
-      ECS_SERVICE:  ${{ env.DEV_ECS_SERVICE }}
-      ECS_CONTAINER_NAME: ${{ env.DEV_ECS_CONTAINER_NAME }}
-      ECS_TASK_DEFINITION: ${{ env.DEV_ECS_TASK_DEFINITION }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
+    needs: [build]
+    env:
+      CONTAINER_IMAGE: ${{ needs.build.outputs.container_image }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          aws-access-key-id: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DEV_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.DEV_AWS_REGION }}
+
+      - name: Fetch task definition
+        id: fetch-task-definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.DEV_ECS_TASK_DEFINITION }} --query taskDefinition > task-definition.json
+
+      - name: Update container image in task definition
+        id: update-image
+        uses: aws-actions/amazon-ecs-render-task-definition@v1.3.0
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.DEV_ECS_CONTAINER_NAME }}
+          image: ${{ env.CONTAINER_IMAGE }}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1.5.0
+        with:
+          task-definition: ${{ steps.update-image.outputs.task-definition }}
+          service: ${{ env.DEV_ECS_SERVICE }}
+          cluster: ${{ env.DEV_ECS_CLUSTER }}
+          wait-for-service-stability: true
+          force-new-deployment: true
 
   deploy-prod:
     if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/deploy-ecs.yml
-    needs: [build]
+
+    runs-on: ubuntu-latest
     permissions:
       packages: read
-    with:
-      AWS_REGION:  ${{ env.PROD_AWS_REGION }}
-      ECS_CLUSTER: ${{ env.PROD_ECS_CLUSTER }}
-      ECS_SERVICE:  ${{ env.PROD_ECS_SERVICE }}
-      ECS_CONTAINER_NAME: ${{ env.PROD_ECS_CONTAINER_NAME }}
-      ECS_TASK_DEFINITION: ${{ env.PROD_ECS_TASK_DEFINITION }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+    needs: [build]
+    env:
+      CONTAINER_IMAGE: ${{ needs.build.outputs.container_image }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.PROD_AWS_REGION }}
+
+      - name: Fetch task definition
+        id: fetch-task-definition
+        run: DEV|
+          aws ecs describe-task-definition --task-definition ${{ env.PROD_ECS_TASK_DEFINITION }} --query taskDefinition > task-definition.json
+
+      - name: Update container image in task definition
+        id: update-image
+        uses: aws-actions/amazon-ecs-render-task-definition@v1.3.0
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.PROD_ECS_CONTAINER_NAME }}
+          image: ${{ env.CONTAINER_IMAGE }}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1.5.0
+        with:
+          task-definition: ${{ steps.update-image.outputs.task-definition }}
+          service: ${{ env.PROD_ECS_SERVICE }}
+          cluster: ${{ env.PROD_ECS_CLUSTER }}
+          wait-for-service-stability: false
+          force-new-deployment: true
 
