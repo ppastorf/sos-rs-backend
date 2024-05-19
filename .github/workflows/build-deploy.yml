@@ -57,7 +57,7 @@ jobs:
         with:
           images: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}
           tags:
-            type=raw,value={{branch}}-${{ env.IMAGE_TAG }}
+            type=raw,value={{branch}}-{{sha}}
 
       - name: Build and push Docker image
         id: push
