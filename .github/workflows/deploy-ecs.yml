@@ -3,15 +3,16 @@ name: Deploy to ECS
 on:
   workflow_call:
     inputs:
-      DEV_AWS_REGION: 
+      AWS_REGION: 
         required: true
-      DEV_ECS_CLUSTER:
+      ECS_CLUSTER:
         required: true
-      DEV_ECS_SERVICE: 
+      ECS_SERVICE: 
         required: true
-      DEV_ECS_CONTAINER_NAME:
+      ECS_CONTAINER_NAME:
         required: true
-      DEV_ECS_TASK_DEFINITION:
+      ECS_TASK_DEFINITION:
+        required: true
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true

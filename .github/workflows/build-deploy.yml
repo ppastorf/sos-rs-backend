@@ -18,18 +18,14 @@ env:
   IMAGE_TAG: ${{ github.sha }}
 
   # dev
-  DEV_AWS_ACCESS_KEY_ID: 
-  DEV_AWS_SECRET_ACCESS_KEY:
-  DEV_BRANCH: develop
   DEV_AWS_REGION: sa-east-1
+  DEV_BRANCH: develop
   DEV_ECS_CLUSTER: sos-rs-freetier-ec2_cluster
   DEV_ECS_SERVICE: sos-rs-freetier-backend
   DEV_ECS_CONTAINER_NAME: server
   DEV_ECS_TASK_DEFINITION: sos-rs-freetier-backend
 
   # prod
-  PROD_AWS_ACCESS_KEY_ID:
-  PROD_AWS_SECRET_ACCESS_KEY: 
   PROD_AWS_REGION: sa-east-1
   PROD_BRANCH: main
   PROD_REGION: sa-east-1
@@ -90,14 +86,14 @@ jobs:
     permissions:
       packages: read
     with:
-      DEV_AWS_REGION:  ${{ env.DEV_AWS_REGION }}
-      DEV_ECS_CLUSTER: ${{ env.DEV_ECS_CLUSTER }}
-      DEV_ECS_SERVICE:  ${{ env.DEV_ECS_SERVICE }}
-      DEV_ECS_CONTAINER_NAME: ${{ env.DEV_ECS_CONTAINER_NAME }}
-      DEV_ECS_TASK_DEFINITION: ${{ env.DEV_ECS_TASK_DEFINITION }}
+      AWS_REGION:  ${{ env.DEV_AWS_REGION }}
+      ECS_CLUSTER: ${{ env.DEV_ECS_CLUSTER }}
+      ECS_SERVICE:  ${{ env.DEV_ECS_SERVICE }}
+      ECS_CONTAINER_NAME: ${{ env.DEV_ECS_CONTAINER_NAME }}
+      ECS_TASK_DEFINITION: ${{ env.DEV_ECS_TASK_DEFINITION }}
     secrets:
-      DEV_AWS_ACCESS_KEY_ID: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
-      DEV_AWS_SECRET_ACCESS_KEY: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
 
   deploy-prod:
     if: github.ref == 'refs/heads/main'
@@ -106,12 +102,12 @@ jobs:
     permissions:
       packages: read
     with:
-      PROD_AWS_REGION:  ${{ env.PROD_AWS_REGION }}
-      PROD_ECS_CLUSTER: ${{ env.PROD_ECS_CLUSTER }}
-      PROD_ECS_SERVICE:  ${{ env.PROD_ECS_SERVICE }}
-      PROD_ECS_CONTAINER_NAME: ${{ env.PROD_ECS_CONTAINER_NAME }}
-      PROD_ECS_TASK_DEFINITION: ${{ env.PROD_ECS_TASK_DEFINITION }}
+      AWS_REGION:  ${{ env.PROD_AWS_REGION }}
+      ECS_CLUSTER: ${{ env.PROD_ECS_CLUSTER }}
+      ECS_SERVICE:  ${{ env.PROD_ECS_SERVICE }}
+      ECS_CONTAINER_NAME: ${{ env.PROD_ECS_CONTAINER_NAME }}
+      ECS_TASK_DEFINITION: ${{ env.PROD_ECS_TASK_DEFINITION }}
     secrets:
-      PROD_AWS_ACCESS_KEY_ID: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
-      PROD_AWS_SECRET_ACCESS_KEY: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
 
