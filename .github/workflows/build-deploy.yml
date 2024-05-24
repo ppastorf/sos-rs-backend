@@ -10,10 +10,6 @@ env:
   IMAGE_REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   IMAGE_TAG: ${{ github.sha }}
-
-  DEV_BRANCH: develop
-  PROD_BRANCH: main
-
   PORT: 4000
 
 jobs:
@@ -82,9 +78,13 @@ jobs:
           ssh -o StrictHostKeyChecking=no root@${{ secrets.DEV_DROPLET_IP }} << 'EOF'
             docker login ${{ env.IMAGE_REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
             docker pull ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-            docker stop $(docker ps -q) || true
-            docker rm $(docker ps -aq) || true
-            docker run -dit --name sos-rs-api -p ${{ env.PORT }}:${{ env.PORT }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            docker exec nginx_proxy /bin/sh ./ROUTE_UP.sh sos-rs-api-${{ env.IMAGE_TAG }}:${{ env.PORT }}
+            RUNNING=$(docker ps -q)
+            docker run -d --name sos-rs-api-${{ env.IMAGE_TAG }} --restart always --network sos-rs-network -v .:/usr/app -w /usr/app -e DATABASE_URL={{ secrets.DATABASE_URL_PRD }} -e PORT=${{ env.PORT }} --tty node:18.18-alpine sh -c "npm install && npx prisma generate && npx prisma migrate dev && npm run start:dev -- --preserveWatchOutput"
+            docker exec nginx_proxy nginx -s reload
+            sleep 10
+            docker stop $RUNNING || true
+            docker rm $RUNNING || true
           EOF
 
   deploy-prod:
@@ -108,7 +108,11 @@ jobs:
           ssh -o StrictHostKeyChecking=no root@${{ secrets.PROD_DROPLET_IP }} << 'EOF'
             docker login ${{ env.IMAGE_REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
             docker pull ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-            docker stop $(docker ps -q) || true
-            docker rm $(docker ps -aq) || true
-            docker run -dit --name sos-rs-api -p ${{ env.PORT }}:${{ env.PORT }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            docker exec nginx_proxy /bin/sh ./ROUTE_UP.sh sos-rs-api-${{ env.IMAGE_TAG }}:${{ env.PORT }}
+            RUNNING=$(docker ps -q)
+            docker run -d --name sos-rs-api-${{ env.IMAGE_TAG }} --restart always --network sos-rs-network -v .:/usr/app -w /usr/app -e DATABASE_URL={{ secrets.DATABASE_URL_PRD }} -e PORT=${{ env.PORT }} --tty node:18.18-alpine sh -c "npx prisma generate && npx prisma migrate deploy && npm run build && npm run start:prod"
+            docker exec nginx_proxy nginx -s reload
+            sleep 10
+            docker stop $RUNNING || true
+            docker rm $RUNNING || true
           EOF
