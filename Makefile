@@ -19,34 +19,6 @@ start:
 	@$(MAKE) setup
 	@npm run start:dev
 
-start-debug:
-	@$(MAKE) setup
-	@npm run start:debug
-
-build:
-	@npm run build
-
-clean:
-	@rm -rf dist
-
-format:
-	@npm run format
-
-lint:
-	@npm run lint
-
-test:
-	@npm run test
-
-test-coverage:
-	@npm run test:cov
-
-test-debug:
-	@npm run test:debug
-
-test-e2e:
-	@npm run test:e2e
-
 dev-up:
 	@docker compose -f docker-compose.dev.yml up -d --build 
 
@@ -59,22 +31,3 @@ dev-logs:
 dev-db-load-dump:
 	@docker compose -f docker-compose.dev.yml cp prisma/dev_dump.sql db:/tmp/backup.sql
 	@docker compose -f docker-compose.dev.yml exec db psql -U root -d sos_rs -f /tmp/backup.sql
-
-# Para ser usado no workflow de build
-docker-build:
-	@docker build . -t $(DOCKER_IMAGE)
-
-docker-tag:
-	@docker tag $(DOCKER_IMAGE) $(DOCKER_REPO):$(GIT_TAG)
-
-docker-push:
-	@aws ecr get-login-password --region sa-east-1 | docker login --username AWS --password-stdin $(DOCKER_REPO)
-	@docker push $(DOCKER_REPO):$(GIT_TAG)
-
-# Para ser usado no workflow de deploy
-prod-up:
-	@docker compose -f docker-compose.yml up -d --build --force-recreate
-
-prod-down:
-	@docker compose -f docker-compose.yml down --rmi all
-
