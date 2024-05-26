@@ -1,6 +1,5 @@
 services:
   api:
-    container_name: sos-rs-api
     build:
       context: .
       dockerfile: Dockerfile.dev
@@ -8,16 +7,14 @@ services:
     tty: true
     depends_on:
       - db
-    ports:
-      - '${PORT}:${PORT}'
     volumes:
       - .:/usr/app
     environment:
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_DATABASE_NAME}?schema=public
       - HOST=${HOST}
       - PORT=${PORT}
+
   db:
-    container_name: sos-rs-db
     image: postgres
     ports:
       - '${DB_PORT}:${DB_PORT}'
@@ -25,3 +22,17 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_USER=${DB_USER}
 
+  nginx:
+    image: nginx:latest
+    ports:
+      - '${NGINX_PORT}:${NGINX_PORT}'
+    environment:
+      - NGINX_PORT=${NGINX_PORT}
+      - PORT=${PORT}
+    command: >
+      bash -c '
+      envsubst < /tmp/nginx.dev.conf > /etc/nginx/nginx.conf;
+      nginx -g "daemon off;"
+      '
+    volumes:
+      - ./nginx.dev.conf:/tmp/nginx.dev.conf

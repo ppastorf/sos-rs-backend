@@ -1,6 +1,5 @@
 services:
   sos-rs-api:
-    container_name: sos-rs-api
     build:
       context: .
       dockerfile: Dockerfile
@@ -8,7 +7,18 @@ services:
     tty: true
     ports:
       - '4000:4000'
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - '${NGINX_PORT}:${NGINX_PORT}'
+    environment:
+      - NGINX_PORT=${NGINX_PORT}
+      - PORT=${PORT}
     command: >
-      sh -c "npx prisma generate &&
-      npx prisma migrate deploy &&
-      npm run build && npm run start:prod"
+      bash -c '
+      envsubst < /tmp/nginx.conf > /etc/nginx/nginx.conf;
+      nginx -g "daemon off;"
+      '
+    volumes:
+      - ./nginx.conf:/tmp/nginx.conf
